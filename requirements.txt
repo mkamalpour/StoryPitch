@@ -1,0 +1,16 @@
+# Core dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+sqlmodel>=0.0.14
+httpx>=0.25.0
+
+# UI
+gradio>=4.0.0
+python-telegram-bot>=20.0
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Optional: for better performance
+aiofiles>=23.0.0
