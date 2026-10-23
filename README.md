@@ -16,13 +16,13 @@ An interactive fiction workspace with local AI, branching checkpoints, and persi
 Python **3.11** is recommended and verified. Use a virtual environment and the single dependency file; its bounds keep the Gradio 5 client compatible with FastAPI and Pydantic.
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+conda activate base  # Or activate another existing compatible environment.
+# Optional dependency setup; requires explicit permission and connectivity.
 python -m pip install -r requirements.txt
 python run.py
 ```
 
-On macOS/Linux, activate with `source .venv/bin/activate`.
+On macOS/Linux, activate an existing compatible environment before using the same Python commands.
 
 The launcher opens the browser once the server is ready, chooses a nearby free port if needed, and stops its child processes when you press Ctrl+C. The UI and API share one loopback address. Choose **Built-in demo** to try the complete workflow without a model.
 
@@ -81,3 +81,5 @@ run.py     Launcher
 ```
 
 A previously hardcoded Telegram token has been removed from the current source. Revoke that token through BotFather before configuring a replacement; earlier Git commits still contain it.
+
+Current lightweight check (Windows, existing Conda base / Python 3.13.5): **22 passed**. No dependency installs, model downloads, live publishing, or heavy datasets were used.

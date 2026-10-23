@@ -381,3 +381,13 @@ def test_unsupported_local_chat_route_uses_completion_route(monkeypatch):
         == "Completion response"
     )
     assert paths == ["/v1/chat/completions", "/v1/completions"]
+
+
+def test_naive_datetime_fields_have_explicit_sql_mapping():
+    from datetime import datetime, timezone
+    from sqlalchemy import DateTime
+    from pydantic import ValidationError
+    from db.db import User
+    assert isinstance(User.__table__.c.created_at.type, DateTime)
+    with pytest.raises(ValidationError):
+        User.model_validate({"username": "Reader", "created_at": datetime.now(timezone.utc)})

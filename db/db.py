@@ -2,6 +2,7 @@
 from sqlmodel import SQLModel, Field, create_engine, Session, select
 from typing import Optional, List
 from datetime import datetime
+from sqlalchemy import DateTime
 from pydantic import NaiveDatetime
 import json
 from config import DATABASE_URL
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str
-    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow)
+    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow, sa_type=DateTime)
 
 
 class SessionModel(SQLModel, table=True):
@@ -32,8 +33,8 @@ class SessionModel(SQLModel, table=True):
     title: str = "Untitled"
     world_state: str = Field(default="{}")  # JSON serialized dict
     current_step: int = 0
-    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow)
-    updated_at: NaiveDatetime = Field(default_factory=datetime.utcnow)
+    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow, sa_type=DateTime)
+    updated_at: NaiveDatetime = Field(default_factory=datetime.utcnow, sa_type=DateTime)
 
     def get_world_state(self):
         try:
@@ -52,7 +53,7 @@ class Step(SQLModel, table=True):
     prompt: str
     ai_output: str
     user_input: Optional[str] = None
-    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow)
+    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow, sa_type=DateTime)
 
 
 class Snapshot(SQLModel, table=True):
@@ -63,7 +64,7 @@ class Snapshot(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     session_id: int
-    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow)
+    created_at: NaiveDatetime = Field(default_factory=datetime.utcnow, sa_type=DateTime)
     title: str = (
         "autosave"  # User-friendly save name (e.g., "Before entering the castle")
     )
