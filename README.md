@@ -13,7 +13,7 @@ An interactive fiction workspace with local AI, branching checkpoints, and persi
 
 ## Setup
 
-Python **3.11** is recommended and verified. Use a virtual environment and the single dependency file; its bounds keep the Gradio 5 client compatible with FastAPI and Pydantic.
+Python **3.11** is recommended and verified. Use an existing compatible environment and the single dependency file; its bounds keep the Gradio 5 client compatible with FastAPI and Pydantic.
 
 ```powershell
 conda activate base  # Or activate another existing compatible environment.
