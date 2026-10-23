@@ -83,3 +83,5 @@ run.py     Launcher
 A previously hardcoded Telegram token has been removed from the current source. Revoke that token through BotFather before configuring a replacement; earlier Git commits still contain it.
 
 Current lightweight check (Windows, existing Conda base / Python 3.13.5): **22 passed**. No dependency installs, model downloads, live publishing, or heavy datasets were used.
+
+No license file is included.
