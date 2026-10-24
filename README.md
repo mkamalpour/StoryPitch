@@ -1,6 +1,10 @@
 # StoryPitch
 
-An interactive fiction workspace with local AI, branching checkpoints, and persistent story memory. Create a character, choose a setting, and shape the next scene through suggested choices or your own actions.
+Create a character, choose a setting, and shape a story through choices or your own actions. Save checkpoints to explore another branch without losing the earlier one. Start with the built-in demo or connect a local model.
+
+## Try it first
+
+Choose the built-in demo, create a character, and play through a scene. Save a named checkpoint before trying another branch, then restore it to compare. Connect a model later for generated stories; the demo needs no API key.
 
 ## Features
 
@@ -13,11 +17,11 @@ An interactive fiction workspace with local AI, branching checkpoints, and persi
 
 ## Setup
 
-Python **3.11** is recommended and verified. Use an existing compatible environment and the single dependency file; its bounds keep the Gradio 5 client compatible with FastAPI and Pydantic.
+Use an existing compatible environment. The current offline tests pass in Conda `base` with Python **3.13.5**. Use an existing compatible environment and the single dependency file; its bounds keep the Gradio 5 client compatible with FastAPI and Pydantic.
 
 ```powershell
-conda activate base  # Or activate another existing compatible environment.
-# Optional dependency setup; requires explicit permission and connectivity.
+conda activate base  # Or use your existing compatible environment.
+# Install dependencies if they are not already available in your environment.
 python -m pip install -r requirements.txt
 python run.py
 ```
@@ -82,6 +86,6 @@ run.py     Launcher
 
 A previously hardcoded Telegram token has been removed from the current source. Revoke that token through BotFather before configuring a replacement; earlier Git commits still contain it.
 
-Current lightweight check (Windows, existing Conda base / Python 3.13.5): **22 passed**. No dependency installs, model downloads, live publishing, or heavy datasets were used.
+Checked on Windows with Python 3.13.5 (Conda base): **22 tests passed**.
 
 No license file is included.
