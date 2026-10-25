@@ -27,7 +27,7 @@ def _fix_unicode_garbage(text: str) -> str:
     """Fix common Unicode corruption."""
     if not text:
         return text
-    
+
     replacements = {
         'â€”': '—', 'â€“': '–', 'â€œ': '"', 'â€\x9d': '"',
         'â€™': "'", 'â€¦': '...', 'â€¢': '•',
@@ -57,10 +57,10 @@ def _strip_reasoning(text: str) -> str:
     """Remove reasoning before JSON."""
     if not text:
         return text
-    
+
     # Fix Unicode first
     text = _fix_unicode_garbage(text)
-    
+
     # Extract from content wrapper
     content_match = re.search(r'"content":\s*"({.*})"', text, re.DOTALL)
     if content_match:
@@ -68,14 +68,14 @@ def _strip_reasoning(text: str) -> str:
         extracted = extracted.replace('\\"', '"').replace('\\n', '\n')
         if extracted.startswith('{'):
             return extracted
-    
+
     # Find JSON by markers
     markers = ['{"narration"', '{\n"narration"', '```json\n{']
     for marker in markers:
         pos = text.find(marker)
         if pos != -1:
             return text[pos:]
-    
+
     return text
 
 
@@ -83,30 +83,34 @@ def _clean_choices(choices: List[str], max_choices: int, max_len: int = 150) -> 
     """Deduplicate, trim, and clean choices."""
     seen = set()
     cleaned = []
-    
+
+    if not isinstance(choices, (list, tuple)):
+        choices = []
     for ch in choices:
-        ch_clean = (ch or "").strip()
-        ch_clean = re.sub(r'^[\-\*\d\)\.]\s*', '', ch_clean)
+        if not isinstance(ch, str):
+            continue
+        ch_clean = ch.strip()
+        ch_clean = re.sub(r'^(?:[-*]\s+|\d+[.)]\s*)', '', ch_clean)
         ch_clean = re.sub(r'^[0-9️⃣🔟]+\s*', '', ch_clean)
-        
+
         if not ch_clean or len(ch_clean) < 3:
             continue
-        
+
         if len(ch_clean) > max_len:
             ch_clean = ch_clean[:max_len - 1] + "…"
-        
+
         if ch_clean.lower() in seen:
             continue
-        
+
         seen.add(ch_clean.lower())
         cleaned.append(ch_clean)
-        
+
         if len(cleaned) >= max_choices:
             break
-    
+
     if not cleaned:
         cleaned = FALLBACK_CHOICES[:max_choices]
-    
+
     return cleaned
 
 
@@ -114,19 +118,19 @@ def _truncate_narration(narration: str, max_chars: int = 1200) -> str:
     """Truncate narration gracefully at sentence boundary."""
     if len(narration) <= max_chars:
         return narration
-    
+
     # Try to truncate at last sentence boundary
     truncated = narration[:max_chars]
     last_period = truncated.rfind('.')
     last_exclaim = truncated.rfind('!')
     last_question = truncated.rfind('?')
     last_boundary = max(last_period, last_exclaim, last_question)
-    
+
     if last_boundary > max_chars - 100:
         truncated = truncated[:last_boundary + 1]
     else:
         truncated = truncated[:max_chars - 1] + "…"
-    
+
     return truncated
 
 
@@ -142,7 +146,7 @@ def _simple_parse(text: str) -> Dict[str, Any]:
         "clues": "",
         "memory": {"npcs": [], "locations": [], "items": [], "events": [], "discoveries": []}
     }
-    
+
     # Try JSON extraction
     json_match = re.search(r'\{[^{}]*"narration"[^{}]*\}', text, re.DOTALL)
     if json_match:
@@ -156,7 +160,7 @@ def _simple_parse(text: str) -> Dict[str, Any]:
                 return result
         except:
             pass
-    
+
     # Extract narration from paragraphs
     paragraphs = [p.strip() for p in text.split('\n\n') if len(p.strip()) > 30]
     if paragraphs:
@@ -165,7 +169,7 @@ def _simple_parse(text: str) -> Dict[str, Any]:
         sentences = re.split(r'(?<=[.!?])\s+', text)
         if len(sentences) >= 2:
             result["narration"] = ' '.join(sentences[:5])[:1000]
-    
+
     # Extract choices
     choice_pattern = r'(?m)^\s*(\d+)[\.\)]\s*(.+?)$'
     matches = re.findall(choice_pattern, text)
@@ -173,14 +177,14 @@ def _simple_parse(text: str) -> Dict[str, Any]:
         result["choices"] = [c[1].strip() for c in matches[:6]]
     else:
         result["choices"] = FALLBACK_CHOICES[:4]
-    
+
     # Clean choices
     result["choices"] = [re.sub(r'^[\d\.\)\-\*•\s]+', '', c).strip() for c in result["choices"]]
     result["choices"] = [c for c in result["choices"] if c and len(c) > 3][:4]
-    
+
     if not result["choices"]:
         result["choices"] = FALLBACK_CHOICES[:4]
-    
+
     return result
 
 
@@ -189,22 +193,27 @@ def _simple_parse(text: str) -> Dict[str, Any]:
 # ============================================================================
 
 def normalize_ai_text_to_story(
-    ai_text: str, 
-    max_choices: int = 4, 
+    ai_text: str,
+    max_choices: int = 4,
     max_narration_chars: int = 1200
 ) -> Dict[str, Any]:
     """
     Normalize raw AI text into canonical story structure.
-    
+
     Args:
         ai_text: Raw output from LLM
         max_choices: Maximum number of choices to return
         max_narration_chars: Maximum narration length
-    
+
     Returns:
         Dict with narration, choices, clues, memory
     """
-    
+
+    if type(max_choices) is not int or max_choices < 1:
+        raise ValueError("Maximum choices must be a positive integer.")
+    if type(max_narration_chars) is not int or max_narration_chars < 1:
+        raise ValueError("Narration limit must be a positive integer.")
+
     # Handle empty input
     if not ai_text or not ai_text.strip():
         logger.warning("normalize_ai_text_to_story: empty input")
@@ -214,13 +223,13 @@ def normalize_ai_text_to_story(
             "clues": "",
             "memory": {"npcs": [], "locations": [], "items": [], "events": [], "discoveries": []}
         }
-    
+
     # Pre-clean
     text = _clean_code_fences(ai_text)
     text = _strip_reasoning(text)
     text = _clean_whitespace(text)
     text = _fix_unicode_garbage(text)
-    
+
     # Try to use the main parser
     parsed = None
     try:
@@ -237,21 +246,24 @@ def normalize_ai_text_to_story(
     except Exception as e:
         logger.warning(f"Parser error: {e}, using fallback")
         parsed = _simple_parse(text)
-    
+
     # Ensure we have valid parsed data
     if not parsed or not isinstance(parsed, dict):
         parsed = _simple_parse(text)
-    
+
     # Extract fields
-    narration = parsed.get("narration", FALLBACK_NARRATION).strip()
-    clues = parsed.get("clues", "").strip()
+    narration = parsed.get("narration")
+    narration = narration.strip() if isinstance(narration, str) else ""
+    narration = narration or FALLBACK_NARRATION
+    clues = parsed.get("clues")
+    clues = clues.strip() if isinstance(clues, str) else ""
     choices = parsed.get("choices", [])
     memory = parsed.get("memory", {})
-    
+
     # Apply constraints
     narration = _truncate_narration(narration, max_narration_chars)
     choices = _clean_choices(choices, max_choices)
-    
+
     # Validate memory structure
     if not isinstance(memory, dict):
         memory = {}
@@ -262,7 +274,11 @@ def normalize_ai_text_to_story(
         "events": memory.get("events", []) if isinstance(memory.get("events"), list) else [],
         "discoveries": memory.get("discoveries", []) if isinstance(memory.get("discoveries"), list) else []
     }
-    
+
+    memory = {key: list(dict.fromkeys(value.strip() for value in values
+                                    if isinstance(value, str) and value.strip()))
+              for key, values in memory.items()}
+
     # Build result
     result = {
         "narration": narration,
@@ -270,7 +286,7 @@ def normalize_ai_text_to_story(
         "clues": clues,
         "memory": memory
     }
-    
+
     # Log summary for debugging
     memory_count = sum(len(v) for v in memory.values())
     logger.debug(
@@ -278,5 +294,5 @@ def normalize_ai_text_to_story(
         f"choices={len(choices)}, clues={len(clues)} chars, "
         f"memory_items={memory_count}"
     )
-    
+
     return result

@@ -1,5 +1,7 @@
 # StoryPitch
 
+[Explore the interactive project presentation](docs/overview.html).
+
 Create a character, choose a setting, and shape a story through choices or your own actions. Save checkpoints to explore another branch without losing the earlier one. Start with the built-in demo or connect a local model.
 
 ## Try it first
@@ -86,6 +88,8 @@ run.py     Launcher
 
 A previously hardcoded Telegram token has been removed from the current source. Revoke that token through BotFather before configuring a replacement; earlier Git commits still contain it.
 
-Checked on Windows with Python 3.13.5 (Conda base): **22 tests passed**.
+Checked on Windows with Python 3.13.5 (Conda base): **26 tests passed**.
 
 No license file is included.
+
+Story normalization filters malformed model fields and non-text memory entries, removes duplicate choices after cleaning numbered prefixes, and rejects invalid output limits.
