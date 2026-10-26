@@ -13,7 +13,7 @@ Features:
 - Memory extraction (NPCs, locations, items)
 - Model selection (Local LM Studio / HuggingFace)
 - Graceful error handling with user-friendly messages
-- Session persistence across restarts
+- Story records persist in the API; active Telegram session selection stays in memory
 """
 
 import logging
@@ -199,7 +199,10 @@ def format_memory_display(memory_data: Dict[str, Any]) -> str:
     parts = ["🧠 *STORY MEMORY*", ""]
 
     # NPCs
+    memory_data = memory_data.get("memory", memory_data)
     npcs = memory_data.get("npcs", [])
+    if isinstance(npcs, dict):
+        npcs = [dict(data, name=name) for name, data in npcs.items()]
     if npcs:
         parts.append(f"👥 *Characters ({len(npcs)})*")
         for npc in npcs[:8]:
@@ -213,6 +216,8 @@ def format_memory_display(memory_data: Dict[str, Any]) -> str:
 
     # Locations
     locations = memory_data.get("locations", [])
+    if isinstance(locations, dict):
+        locations = [dict(data, name=name) for name, data in locations.items()]
     if locations:
         parts.append(f"🗺️ *Locations ({len(locations)})*")
         for loc in locations[:6]:
@@ -234,6 +239,8 @@ def format_memory_display(memory_data: Dict[str, Any]) -> str:
     if events:
         parts.append(f"📅 *Recent Events ({len(events)})*")
         for event in events[-3:]:
+            if isinstance(event, dict):
+                event = event.get("description", "")
             parts.append(f"  • {event[:80]}...")
         parts.append("")
 
@@ -242,6 +249,8 @@ def format_memory_display(memory_data: Dict[str, Any]) -> str:
     if discoveries:
         parts.append(f"💡 *Discoveries ({len(discoveries)})*")
         for disc in discoveries[-3:]:
+            if isinstance(disc, dict):
+                disc = disc.get("discovery", "")
             parts.append(f"  • {disc[:80]}...")
 
     if len(parts) == 2:
@@ -441,6 +450,31 @@ async def button_callback(
     # STORY CHOICES
     # ================================================================
 
+    elif data.startswith("load_"):
+        session_id = context.chat_data.get("session_id")
+        if not session_id:
+            await query.edit_message_text("No active session. Use /new to start.")
+            return ConversationHandler.END
+        try:
+            snapshot_id = int(data.split("_", 1)[1])
+            async with create_async_client(API_KEY) as client:
+                response = await client.post(
+                    f"{API_BASE}/api/session/{session_id}/load/{snapshot_id}"
+                )
+                response.raise_for_status()
+                state = response.json().get("world_state", {})
+            narration = state.get("last_narration", "Saved story restored.")
+            choices = state.get("last_choices", [])
+            context.chat_data["last_narration"] = narration
+            await query.edit_message_text(
+                format_story_message(narration, choices=choices),
+                reply_markup=create_choice_keyboard(choices), parse_mode="Markdown",
+            )
+        except Exception as error:
+            logger.error("Load failed: %s", type(error).__name__)
+            await query.edit_message_text("The save could not be loaded. Try /load again.")
+        return ConversationHandler.END
+
     elif data.startswith("choice_"):
         choice_idx = int(data.split("_")[1])
         session_id = context.chat_data.get("session_id")
@@ -451,7 +485,7 @@ async def button_callback(
 
         try:
             async with create_async_client(API_KEY) as client:
-                payload = {"choice_index": choice_idx, "user_input": None}
+                payload = {"choice_index": choice_idx, "user_input": None, "model": context.chat_data.get("model", "local")}
                 r = await client.post(
                     f"{API_BASE}/api/session/{session_id}/step", json=payload
                 )
@@ -506,13 +540,13 @@ async def button_callback(
             return ConversationHandler.END
 
         await query.edit_message_text(
-            "🧠 *Analyzing story memory...*", parse_mode="Markdown"
+            "🧠 *Loading saved story memory...*", parse_mode="Markdown"
         )
 
         try:
             async with create_async_client(API_KEY) as client:
-                r = await client.post(
-                    f"{API_BASE}/api/session/{session_id}/refresh-memory"
+                r = await client.get(
+                    f"{API_BASE}/api/session/{session_id}/memory"
                 )
                 r.raise_for_status()
                 memory_data = r.json()
@@ -718,7 +752,7 @@ async def handle_text(
 
     try:
         async with create_async_client(API_KEY) as client:
-            payload = {"user_input": text, "choice_index": None}
+            payload = {"user_input": text, "choice_index": None, "model": context.chat_data.get("model", "local")}
             r = await client.post(
                 f"{API_BASE}/api/session/{session_id}/step", json=payload
             )
@@ -866,12 +900,12 @@ async def memory_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
 
     await update.message.reply_text(
-        "🧠 *Analyzing story memory...*", parse_mode="Markdown"
+        "🧠 *Loading saved story memory...*", parse_mode="Markdown"
     )
 
     try:
         async with create_async_client(API_KEY) as client:
-            r = await client.post(f"{API_BASE}/api/session/{session_id}/refresh-memory")
+            r = await client.get(f"{API_BASE}/api/session/{session_id}/memory")
             r.raise_for_status()
             memory_data = r.json()
 

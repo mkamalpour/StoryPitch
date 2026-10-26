@@ -97,7 +97,7 @@ class DatabaseManager:
         """Delete a snapshot"""
         return await self._make_request(
             "DELETE",
-            f"/api/admin/snapshot/{snapshot_id}",
+            f"/api/snapshot/{snapshot_id}",
             "Error deleting snapshot",
             None,
         )

@@ -1,5 +1,5 @@
 # story/logic.py
-from db.db import create_session, get_session, get_steps, init_db, commit_story_step
+from db.db import create_session, get_session, get_steps, init_db, commit_story_step, delete_session
 from story.prompts import build_fast_prompt  # Optimized fast prompts
 from story.parser import parse_ai_output
 from story.postprocess import normalize_ai_text_to_story
@@ -52,6 +52,7 @@ async def start_session(
     logger.debug("Model: %s", model or "default")
     logger.debug("=" * 100)
 
+    sess = None
     try:
         # Ensure DB is initialized (idempotent)
         logger.debug("🗄️  Initializing database...")
@@ -219,6 +220,11 @@ async def start_session(
         return result
 
     except Exception as e:
+        # Failed initial generation must not leave an unplayable empty story.
+        if sess is not None:
+            stored = get_session(sess.id)
+            if stored is not None and stored.current_step == 0:
+                delete_session(sess.id)
         logger.error("=" * 100)
         logger.error(f"❌ FAILED TO START SESSION for user {user_id}")
         logger.error(f"Error: {e}")
