@@ -470,7 +470,31 @@ def _healthcheck_text():
 
 
 with gr.Blocks(
-    theme=gr.themes.Soft(),
+    # Keep the Soft layout while making labels, hints and selected controls readable.
+    theme=gr.themes.Soft().set(
+        block_label_text_color="#4338ca",
+        block_label_text_color_dark="#e2e8f0",
+        block_info_text_color="#4b5563",
+        block_info_text_color_dark="#cbd5e1",
+        block_title_text_color="#4338ca",
+        block_title_text_color_dark="#e2e8f0",
+        body_text_color_subdued="#4b5563",
+        body_text_color_subdued_dark="#cbd5e1",
+        checkbox_label_background_fill_selected="#4338ca",
+        checkbox_label_background_fill_selected_dark="#3730a3",
+        checkbox_label_text_color_selected="#ffffff",
+        checkbox_label_text_color_selected_dark="#ffffff",
+        button_primary_background_fill="#4338ca",
+        button_primary_background_fill_hover="#3730a3",
+        button_primary_background_fill_dark="#4338ca",
+        button_primary_background_fill_hover_dark="#3730a3",
+        button_primary_border_color="#4338ca",
+        button_primary_border_color_hover="#3730a3",
+        button_primary_border_color_dark="#4338ca",
+        button_primary_border_color_hover_dark="#3730a3",
+        button_primary_text_color="#ffffff",
+        button_primary_text_color_dark="#ffffff",
+    ),
     title="🎭 Interactive Story Game - Your Adventure Awaits",
     css="""
         /* Make narration text BIGGER and more readable */
@@ -504,7 +528,7 @@ with gr.Blocks(
         """
         # 🎭 Interactive Story Game
 
-        ### ✨ Create Your Own AI-Powered Adventure Story!
+        ## ✨ Create Your Own AI-Powered Adventure Story!
 
         **Simple Steps:** Create Character → Choose Theme → Start Playing → Make Choices → Watch Your Story Unfold
         """

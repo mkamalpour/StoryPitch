@@ -8,6 +8,22 @@ Create a character, choose a setting, and shape a story through choices or your 
 
 Choose the built-in demo, create a character, and play through a scene. Save a named checkpoint before trying another branch, then restore it to compare. Connect a model later for generated stories; the demo needs no API key.
 
+<details>
+<summary>Using the existing managed Windows workspace</summary>
+
+Assigned environment: **base** — Python **3.13.5**, using the existing Conda environment `base`. Open `Workspaces/StoryPitch.code-workspace` from the workspace folder to select its interpreter.
+
+From this repository folder in PowerShell:
+
+```powershell
+& '..\Launchers\StoryPitch.cmd' --check --deep
+& '..\Launchers\StoryPitch.cmd'
+```
+
+The launcher activates the assigned environment and checks dependencies. It does not install packages or download models. These launchers belong to the managed parent workspace; for a standalone clone, follow the setup instructions below in your own compatible environment. Keep optional model/provider prerequisites separate from the offline examples.
+
+</details>
+
 ## Features
 
 - Responsive browser interface with readable story layouts, dark mode, and session recovery.
