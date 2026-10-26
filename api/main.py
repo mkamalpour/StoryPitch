@@ -585,6 +585,22 @@ async def api_get_session_snapshots(session_id: int):
     }
 
 
+@app.get('/api/session/{session_id}/compare/{snapshot_id}')
+async def api_compare_checkpoint(session_id: int, snapshot_id: int):
+    from story.checkpoints import compare_worlds
+    current = get_session(session_id)
+    saved = get_snapshot_details(snapshot_id)
+    if current is None or saved is None or saved.session_id != session_id:
+        raise HTTPException(404, 'session or checkpoint not found')
+    try:
+        comparison = compare_worlds(current.get_world_state(), json.loads(saved.world_state))
+    except (ValueError, TypeError) as error:
+        raise HTTPException(409, 'Checkpoint state cannot be compared; no story data was changed.') from error
+    return JSONResponse(dict(session_id=session_id, snapshot_id=snapshot_id,
+                        current_step=current.current_step, saved_step=saved.current_step,
+                        checkpoint_title=saved.title, **comparison), headers={'Cache-Control': 'no-store'})
+
+
 @app.post(
     "/api/session/{session_id}/load/{snapshot_id}",
 )

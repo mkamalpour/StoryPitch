@@ -573,10 +573,12 @@ to {
                 <div class="save-load-bar">
                     <select id="savesList" aria-label="Saved checkpoints"></select>
                     <button id="loadBtn" class="secondary">Load</button>
+                    <button id="compareSaveBtn" class="secondary">Compare with current scene</button>
                     <button id="renameSaveBtn" class="secondary">Rename</button>
                     <button id="deleteSaveBtn" class="secondary">Delete</button>
                 </div>
                 <div id="saveStatus" class="status-text"></div>
+                <pre id="checkpointComparison" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
             </div>
         </div>
     </main>
@@ -1036,9 +1038,10 @@ to {
     function updateAvailability() {
         ['continueBtn','saveBtn','summaryBtn','refreshMemoryBtn','refreshHistoryBtn','exportTxtBtn'].forEach(id => $(id).disabled = isProcessing || !currentSessionId);
         const saved = Number($('savesList').value) > 0;
-        ['loadBtn','renameSaveBtn','deleteSaveBtn'].forEach(id => $(id).disabled = isProcessing || !saved);
+        ['loadBtn','compareSaveBtn','renameSaveBtn','deleteSaveBtn'].forEach(id => $(id).disabled = isProcessing || !saved);
     }
     function displayStory(narration, choices = [], clues = '') {
+        $('checkpointComparison').textContent = '';
         $('play').classList.add('has-story'); $('storyDisplay').classList.remove('empty-scene'); $('storyDisplay').textContent = narration || 'This scene is empty. Start a new story or load a checkpoint.';
         currentChoices = Array.isArray(choices) ? choices : [];
         const container = $('choicesRadioGroup'); container.replaceChildren(); container.dataset.selected = '';
@@ -1075,12 +1078,23 @@ to {
         await withProcessingLock(async () => { localStorage.setItem(`storypitch.model.${currentSessionId}`, $('modelSelect').value); const result = await apiCall(`/api/session/${currentSessionId}/step`,'POST',{user_input:custom ? input : null,choice_index:custom ? null : choice,model:$('modelSelect').value}); displayStory(result.narration,result.choices,result.clues); if (custom) $('customAction').value = ''; const state = await apiCall(`/api/session/${currentSessionId}/state`); $('chapterLabel').textContent = `Chapter ${state.current_step} / ${state.title}`; }, 'Could not continue');
     }
     async function refreshSavesList() {
+        $('checkpointComparison').textContent = '';
         const select = $('savesList'); const previous = select.value; select.replaceChildren();
         if (currentSessionId) { const data = await apiCall(`/api/session/${currentSessionId}/snapshots`); for (const save of data.snapshots || []) { const option = document.createElement('option'); option.value = save.id; option.textContent = `${save.title} / Chapter ${save.current_step}`; select.append(option); } }
         if (!select.options.length) { const option = document.createElement('option'); option.value = ''; option.textContent = 'No checkpoints yet'; select.append(option); }
         if ([...select.options].some(option => option.value === previous)) select.value = previous; updateAvailability();
     }
     async function saveGame() { if (!currentSessionId) return; await withProcessingLock(async () => { await apiCall(`/api/session/${currentSessionId}/save`,'POST',{title:$('saveName').value.trim() || 'Quick save',description:''}); await refreshSavesList(); notify('Checkpoint saved.'); }); }
+    async function compareSave() {
+        const id = Number($('savesList').value);
+        if (!id || !currentSessionId) return;
+        await withProcessingLock(async () => {
+            const result = await apiCall(`/api/session/${currentSessionId}/compare/${id}`);
+            $('checkpointComparison').textContent = `Current chapter ${result.current_step} / Saved chapter ${result.saved_step}\n${result.scope}\n\n` +
+                (result.fields.length ? result.fields.map(field => `${field.field}\nCurrent: ${field.current_present ? field.current : '(absent)'}${field.current_truncated ? '…' : ''}\nSaved: ${field.saved_present ? field.saved : '(absent)'}${field.saved_truncated ? '…' : ''}`).join('\n\n') : 'No story-state fields differ.') +
+                (result.omitted_field_count ? `\n${result.omitted_field_count} further fields omitted from this preview.` : '');
+        });
+    }
     async function loadGame() { const id = Number($('savesList').value); if (!id || !confirm('Return to this checkpoint? Your current progress will be replaced.')) return; await withProcessingLock(async () => { await apiCall(`/api/session/${currentSessionId}/load/${id}`,'POST'); await restoreState(); notify('Checkpoint restored.'); }); }
     async function renameSave() { const id = Number($('savesList').value); if (!id) return; const title = prompt('Checkpoint title:'); if (!title || !title.trim()) return; await withProcessingLock(async () => { await apiCall(`/api/snapshot/${id}/rename`,'PUT',{new_title:title.trim()}); await refreshSavesList(); }); }
     async function deleteSave() { const id = Number($('savesList').value); if (!id || !confirm('Delete this checkpoint permanently?')) return; await withProcessingLock(async () => { await apiCall(`/api/snapshot/${id}`,'DELETE'); await refreshSavesList(); }); }
@@ -1103,6 +1117,8 @@ to {
     document.getElementById("saveBtn").onclick = saveGame;
     document.getElementById("loadBtn").onclick = loadGame;
     document.getElementById("renameSaveBtn").onclick = renameSave;
+    $('compareSaveBtn').onclick = compareSave;
+    $('savesList').addEventListener('change', () => { $('checkpointComparison').textContent = ''; });
     document.getElementById("deleteSaveBtn").onclick = deleteSave;
     document.getElementById("refreshSavesBtn").onclick = () => withProcessingLock(refreshSavesList, "Could not refresh checkpoints");
     document.getElementById("refreshMemoryBtn").onclick = refreshMemory;

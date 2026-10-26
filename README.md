@@ -114,3 +114,9 @@ Story normalization filters malformed model fields and non-text memory entries, 
 
 See the [engineering audit](docs/ENGINEERING_AUDIT.md) for the dated test baseline,
 project assessment, environment assignment and remaining work.
+
+## Additional workflow improvements
+
+Read-only comparison of a saved checkpoint with the current scene, with bounded field previews, chapter numbers and cross-session rejection.
+
+Choose a checkpoint and click Compare with current scene before Load.

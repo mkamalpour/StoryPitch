@@ -26,7 +26,7 @@ VS Code's local interpreter settings were aligned with the same assignment.
 
 ## Verification
 
-- **Automated tests:** 35 passed.
+- **Automated tests:** 37 passed; 0 reported skips; 0 private-report cases deselected.
 - **Startup check:** `run.cmd --check` passed from outside the repository;
   required startup modules were imported in the assigned environment.
 - **Tested runtime:** Windows; Conda base; Python 3.13.5.
@@ -48,8 +48,8 @@ python -m pytest tests -q -p no:cacheprovider
 
 ## Next three upgrades
 
-1. Side-by-side checkpoint comparison.
-2. Provider readiness diagnostics.
+1. Named story-branch organization and evaluation fixtures.
+2. Explicit provider connection tests with bounded timeouts.
 3. Reusable story-quality evaluation cases.
 
 Expected benefit: clearer decisions, more reproducible workflows and stronger evidence
@@ -58,3 +58,17 @@ for quality. These are proposed upgrades, not implemented features or measured s
 External assets: A configured answering model is needed for generated stories; demo is model-free.
 
 No root license file is set. No license was selected or changed.
+
+## Additional implementation pass
+
+Read-only comparison of a saved checkpoint with the current scene, with bounded field previews, chapter numbers and cross-session rejection.
+
+Use: Choose a checkpoint and click Compare with current scene before Load.
+
+Verification: the complete offline suite passed in the assigned **base**
+environment after this change (37 tests). Regression fixtures remain
+temporary/synthetic. Optional real-model/data quality and external integrations
+remain unverified. No packages, models or additional environments were installed.
+
+The earlier numeric scores are subjective historical assessments; new features do
+not automatically establish a higher score or production readiness.
