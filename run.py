@@ -60,7 +60,18 @@ def main(argv=None):
     )
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args(argv)
-    from config import API_PORT, TELEGRAM_TOKEN
+    try:
+        from config import API_PORT, TELEGRAM_TOKEN
+    except (ImportError, ModuleNotFoundError) as exc:
+        print(
+            "\nStoryPitch could not start because a required dependency is missing.\n"
+            "\nUse the assigned environment and install the project dependencies first:\n"
+            "  conda activate base\n"
+            "  python -m pip install -r requirements.txt\n"
+            "\nIf you are using the managed workspace, open the project workspace for the assigned interpreter.\n"
+            f"Original error: {type(exc).__name__}: {exc}\n"
+        )
+        raise SystemExit(2)
 
     env = os.environ.copy()
     if args.mode == "seed":
